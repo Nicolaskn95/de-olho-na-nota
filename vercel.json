@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd deOlhoNaNota-web && npm install && npm run build",
+  "outputDirectory": "deOlhoNaNota-web/dist",
+  "installCommand": "cd deOlhoNaNota-web && npm install",
+  "framework": "vite"
+}
