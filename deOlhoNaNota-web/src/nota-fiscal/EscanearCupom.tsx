@@ -32,13 +32,15 @@ export function EscanearCupom() {
   const [notaProcessada, setNotaProcessada] = useState<NotaFiscalResponse | null>(null)
   
   const scannerRef = useRef<Html5Qrcode | null>(null)
+  const inicializandoRef = useRef(false)
 
   useEffect(() => {
-    if (conteudoLido || modoManual) return
+    if (conteudoLido || modoManual || erro) return
+    if (inicializandoRef.current || scannerRef.current) return
 
     const iniciarScanner = async () => {
+      inicializandoRef.current = true
       setCarregando(true)
-      setErro(null)
 
       try {
         const scanner = new Html5Qrcode(SCANNER_ID)
@@ -74,6 +76,8 @@ export function EscanearCupom() {
           setErro('Erro desconhecido ao acessar câmera')
         }
         setCarregando(false)
+      } finally {
+        inicializandoRef.current = false
       }
     }
 
@@ -82,7 +86,7 @@ export function EscanearCupom() {
     return () => {
       pararScanner()
     }
-  }, [conteudoLido, modoManual])
+  }, [conteudoLido, modoManual, erro])
 
   const pararScanner = async () => {
     const scanner = scannerRef.current
@@ -101,6 +105,7 @@ export function EscanearCupom() {
 
   const escanearNovamente = async () => {
     await pararScanner()
+    inicializandoRef.current = false
     setConteudoLido(null)
     setErro(null)
     setNotaProcessada(null)
