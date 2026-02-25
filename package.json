@@ -6,7 +6,12 @@
   "author": "nicolas nagano",
   "type": "module",
   "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
+    "build": "cd deOlhoNaNota-backend && npm install && npm run build",
+    "start": "cd deOlhoNaNota-backend && npm start",
     "dev": "concurrently -n backend,frontend \"npm run start:dev --prefix deOlhoNaNota-backend\" \"npm run dev --prefix deOlhoNaNota-web\"",
     "dev:backend": "npm run start:dev --prefix deOlhoNaNota-backend",
     "dev:frontend": "npm run dev --prefix deOlhoNaNota-web",
