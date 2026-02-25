@@ -1,9 +1,9 @@
-import { useState } from 'react'
-import { Scanner, useDevices, type IDetectedBarcode } from '@yudiel/react-qr-scanner'
-import { Html5Qrcode } from 'html5-qrcode'
+import { useState, useEffect, useRef } from 'react'
+import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode'
 import './EscanearCupom.css'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const SCANNER_ID = 'qr-reader'
 
 interface NotaFiscalResponse {
   _id: string
@@ -24,46 +24,87 @@ interface NotaFiscalResponse {
 export function EscanearCupom() {
   const [conteudoLido, setConteudoLido] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
-  const [isPaused, setIsPaused] = useState(false)
+  const [carregando, setCarregando] = useState(true)
   const [urlManual, setUrlManual] = useState('')
   const [modoManual, setModoManual] = useState(false)
-  const [deviceId, setDeviceId] = useState<string | undefined>(undefined)
   const [carregandoImagem, setCarregandoImagem] = useState(false)
   const [processando, setProcessando] = useState(false)
   const [notaProcessada, setNotaProcessada] = useState<NotaFiscalResponse | null>(null)
   
-  const devices = useDevices()
+  const scannerRef = useRef<Html5Qrcode | null>(null)
 
-  const handleScan = (detectedCodes: IDetectedBarcode[]) => {
-    if (detectedCodes.length > 0) {
-      const code = detectedCodes[0]
-      console.log('QR Code detectado:', code.rawValue)
-      setConteudoLido(code.rawValue)
-      setIsPaused(true)
+  useEffect(() => {
+    if (conteudoLido || modoManual) return
+
+    const iniciarScanner = async () => {
+      setCarregando(true)
       setErro(null)
-    }
-  }
 
-  const handleError = (error: unknown) => {
-    console.error('Erro no scanner:', error)
-    if (error instanceof Error) {
-      if (error.message.includes('Permission') || error.message.includes('NotAllowed')) {
-        setErro('Permissão de câmera negada. Permita o acesso à câmera nas configurações do navegador.')
-      } else if (error.message.includes('NotFound')) {
-        setErro('Câmera não encontrada. Verifique se o dispositivo possui câmera.')
-      } else if (error.message.includes('NotReadable')) {
-        setErro('Câmera em uso por outra aplicação. Feche outras abas ou apps.')
-      } else {
-        setErro(`Erro: ${error.message}`)
+      try {
+        const scanner = new Html5Qrcode(SCANNER_ID)
+        scannerRef.current = scanner
+
+        await scanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+          },
+          (decodedText) => {
+            console.log('QR Code detectado:', decodedText)
+            setConteudoLido(decodedText)
+            pararScanner()
+          },
+          () => {}
+        )
+        setCarregando(false)
+      } catch (err) {
+        console.error('Erro ao iniciar scanner:', err)
+        if (err instanceof Error) {
+          if (err.message.includes('Permission') || err.message.includes('NotAllowed')) {
+            setErro('Permissão de câmera negada. Permita o acesso à câmera nas configurações do navegador.')
+          } else if (err.message.includes('NotFound')) {
+            setErro('Câmera não encontrada. Verifique se o dispositivo possui câmera.')
+          } else if (err.message.includes('NotReadable')) {
+            setErro('Câmera em uso por outra aplicação. Feche outras abas ou apps.')
+          } else {
+            setErro(`Erro ao acessar câmera: ${err.message}`)
+          }
+        } else {
+          setErro('Erro desconhecido ao acessar câmera')
+        }
+        setCarregando(false)
       }
     }
+
+    iniciarScanner()
+
+    return () => {
+      pararScanner()
+    }
+  }, [conteudoLido, modoManual])
+
+  const pararScanner = async () => {
+    const scanner = scannerRef.current
+    if (scanner) {
+      try {
+        const state = scanner.getState()
+        if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
+          await scanner.stop()
+        }
+      } catch (e) {
+        console.warn('Erro ao parar scanner:', e)
+      }
+      scannerRef.current = null
+    }
   }
 
-  const escanearNovamente = () => {
+  const escanearNovamente = async () => {
+    await pararScanner()
     setConteudoLido(null)
-    setIsPaused(false)
     setErro(null)
     setNotaProcessada(null)
+    setModoManual(false)
   }
 
   const enviarParaProcessar = async () => {
@@ -113,127 +154,81 @@ export function EscanearCupom() {
     setErro(null)
 
     try {
-      const result = await lerQRCodeDeImagem(file)
-      if (result) {
-        console.log('QR Code lido da imagem:', result)
-        setConteudoLido(result)
-        setIsPaused(true)
-      } else {
-        setErro('Não foi possível ler o QR code da imagem. Tente uma foto com melhor qualidade ou use a opção manual.')
-      }
+      const scanner = new Html5Qrcode('qr-reader-hidden')
+      const result = await scanner.scanFileV2(file, true)
+      console.log('QR Code lido da imagem:', result.decodedText)
+      setConteudoLido(result.decodedText)
+      await pararScanner()
     } catch (e) {
-      console.error('Erro ao processar imagem:', e)
-      setErro('Erro ao processar a imagem. Tente novamente.')
+      console.error('Erro ao ler imagem:', e)
+      setErro('Não foi possível ler o QR code da imagem. Tente uma foto com melhor qualidade ou use a opção manual.')
     } finally {
       setCarregandoImagem(false)
       event.target.value = ''
     }
   }
 
-  const lerQRCodeDeImagem = async (file: File): Promise<string | null> => {
-    const html5QrCode = new Html5Qrcode('qr-reader-hidden')
-    try {
-      const result = await html5QrCode.scanFileV2(file, true)
-      return result.decodedText
-    } catch {
-      return null
-    }
+  const entrarModoManual = async () => {
+    await pararScanner()
+    setModoManual(true)
   }
 
   return (
     <div className="escanear-cupom">
       <div id="qr-reader-hidden" style={{ display: 'none' }} />
+      
       <header className="escanear-cupom__header">
         <h1>Escanear cupom fiscal</h1>
         <p>Posicione o QR code do cupom dentro da área de leitura</p>
       </header>
 
-      {devices.length > 1 && !conteudoLido && (
-        <div className="escanear-cupom__devices">
-          <label htmlFor="camera-select">Câmera:</label>
-          <select
-            id="camera-select"
-            value={deviceId || ''}
-            onChange={(e) => setDeviceId(e.target.value || undefined)}
-            className="escanear-cupom__select"
-          >
-            <option value="">Automático (traseira)</option>
-            {devices.map((device) => (
-              <option key={device.deviceId} value={device.deviceId}>
-                {device.label || `Câmera ${device.deviceId.slice(0, 8)}...`}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {erro && (
+      {erro && !conteudoLido && (
         <div className="escanear-cupom__erro" role="alert">
           <p>{erro}</p>
           <button
             type="button"
             className="escanear-cupom__btn"
-            onClick={() => {
-              setErro(null)
-              setIsPaused(false)
-            }}
+            onClick={escanearNovamente}
           >
             Tentar novamente
           </button>
         </div>
       )}
 
-      {!conteudoLido && !erro && !modoManual && (
-        <div className="escanear-cupom__scanner-container">
-          <Scanner
-            onScan={handleScan}
-            onError={handleError}
-            paused={isPaused}
-            constraints={{
-              deviceId: deviceId,
-              facingMode: deviceId ? undefined : 'environment',
-            }}
-            formats={['qr_code', 'data_matrix', 'aztec']}
-            components={{
-              torch: true,
-              finder: true,
-            }}
-            sound={true}
-            styles={{
-              container: {
-                width: '100%',
-                maxWidth: '400px',
-                borderRadius: '12px',
-                overflow: 'hidden',
-              },
-            }}
-          />
-        </div>
-      )}
-
       {!conteudoLido && !modoManual && (
-        <div className="escanear-cupom__alternativa">
-          <p className="escanear-cupom__alternativa-titulo">Não está funcionando?</p>
-          <div className="escanear-cupom__alternativa-botoes">
-            <label className="escanear-cupom__btn escanear-cupom__btn--upload">
-              {carregandoImagem ? 'Processando...' : 'Enviar foto do QR code'}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                disabled={carregandoImagem}
-                style={{ display: 'none' }}
-              />
-            </label>
-            <button 
-              type="button" 
-              className="escanear-cupom__btn escanear-cupom__btn--link"
-              onClick={() => setModoManual(true)}
-            >
-              Inserir URL manualmente
-            </button>
+        <>
+          <div className="escanear-cupom__scanner-container">
+            {carregando && (
+              <div className="escanear-cupom__loading">
+                <p>Iniciando câmera...</p>
+              </div>
+            )}
+            <div id={SCANNER_ID} className="escanear-cupom__reader" />
           </div>
-        </div>
+
+          <div className="escanear-cupom__alternativa">
+            <p className="escanear-cupom__alternativa-titulo">Não está funcionando?</p>
+            <div className="escanear-cupom__alternativa-botoes">
+              <label className="escanear-cupom__btn escanear-cupom__btn--upload">
+                {carregandoImagem ? 'Processando...' : 'Enviar foto do QR code'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={carregandoImagem}
+                  style={{ display: 'none' }}
+                />
+              </label>
+              <button 
+                type="button" 
+                className="escanear-cupom__btn escanear-cupom__btn--link"
+                onClick={entrarModoManual}
+              >
+                Inserir URL manualmente
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {modoManual && !conteudoLido && (
@@ -251,12 +246,9 @@ export function EscanearCupom() {
             <button 
               type="button" 
               className="escanear-cupom__btn"
-              onClick={() => {
-                setModoManual(false)
-                setUrlManual('')
-              }}
+              onClick={escanearNovamente}
             >
-              Cancelar
+              Voltar ao scanner
             </button>
             <button 
               type="button" 
@@ -276,6 +268,11 @@ export function EscanearCupom() {
           <p className="escanear-cupom__url" title={conteudoLido}>
             {conteudoLido}
           </p>
+          {erro && (
+            <div className="escanear-cupom__erro escanear-cupom__erro--inline" role="alert">
+              <p>{erro}</p>
+            </div>
+          )}
           <div className="escanear-cupom__acoes">
             <button type="button" onClick={escanearNovamente} className="escanear-cupom__btn">
               Escanear novamente
