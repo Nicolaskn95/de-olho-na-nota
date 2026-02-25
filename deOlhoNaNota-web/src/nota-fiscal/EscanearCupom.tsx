@@ -24,7 +24,7 @@ interface NotaFiscalResponse {
 export function EscanearCupom() {
   const [conteudoLido, setConteudoLido] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
-  const [carregando, setCarregando] = useState(true)
+  const [carregando, setCarregando] = useState(false)
   const [urlManual, setUrlManual] = useState('')
   const [modoManual, setModoManual] = useState(false)
   const [carregandoImagem, setCarregandoImagem] = useState(false)
@@ -37,6 +37,12 @@ export function EscanearCupom() {
   useEffect(() => {
     if (conteudoLido || modoManual || erro) return
     if (inicializandoRef.current || scannerRef.current) return
+
+    const elementoScanner = document.getElementById(SCANNER_ID)
+    if (!elementoScanner) {
+      console.error('Elemento do scanner não encontrado')
+      return
+    }
 
     const iniciarScanner = async () => {
       inicializandoRef.current = true
