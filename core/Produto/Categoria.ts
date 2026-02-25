@@ -1,0 +1,10 @@
+export enum Categoria {
+    ALIMENTO = 'ALIMENTO',
+    BEBIDA = 'BEBIDA',
+    FRUTAS = 'FRUTAS',
+    VEGETAIS = 'VEGETAIS',
+    HIPERMERCADO = 'HIPERMERCADO',
+    MERCADO = 'MERCADO',
+    OUTRO = 'OUTRO',
+    CARNES = 'CARNES',
+}

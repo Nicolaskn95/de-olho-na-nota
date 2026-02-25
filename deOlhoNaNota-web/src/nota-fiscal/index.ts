@@ -1,0 +1,1 @@
+export { EscanearCupom } from './EscanearCupom'
