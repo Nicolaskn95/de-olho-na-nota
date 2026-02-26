@@ -1,7 +1,0 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "vite",
-  "buildCommand": "cd deOlhoNaNota-web && npm install && npm run build",
-  "outputDirectory": "deOlhoNaNota-web/dist",
-  "installCommand": "echo 'skipping root install'"
-}
