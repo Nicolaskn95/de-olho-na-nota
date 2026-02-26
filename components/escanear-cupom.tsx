@@ -105,45 +105,42 @@ export function EscanearCupom() {
     <div className="mx-auto max-w-lg px-4 py-6">
       <div id="qr-reader-hidden" style={{ display: "none" }} />
 
-      {/* Header */}
       <header className="mb-8 text-center">
-        <h1 className="mb-2 text-3xl font-bold text-[var(--primary)]">
+        <h1 className="mb-2 text-3xl font-bold text-primary">
           De Olho na Nota
         </h1>
-        <p className="text-[var(--muted-foreground)]">
+        <p className="text-muted-foreground">
           Envie uma foto do QR code do cupom fiscal para extrair os produtos
         </p>
       </header>
 
-      {/* Erro global */}
       {erro && !conteudoLido && (
         <div
           role="alert"
-          className="mb-4 rounded-lg bg-[var(--destructive-background)] p-4 text-center text-[var(--destructive)]"
+          className="mb-4 rounded-lg bg-destructive-background p-4 text-center text-destructive"
         >
           <p className="mb-3">{erro}</p>
           <button
             type="button"
             onClick={recomecar}
-            className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-5 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--muted)]"
+            className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
           >
             Tentar novamente
           </button>
         </div>
       )}
 
-      {/* Upload area */}
       {!conteudoLido && !modoManual && !erro && (
         <div className="flex flex-col items-center gap-6">
           <div className="w-full">
-            <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[var(--accent)] bg-[var(--secondary)] px-6 py-12 transition-colors hover:bg-[#dcfce7]">
+            <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-accent bg-secondary px-6 py-12 transition-colors hover:bg-secondary/80">
               <CameraIcon />
-              <span className="mt-4 text-lg font-medium text-[var(--primary)]">
+              <span className="mt-4 text-lg font-medium text-primary">
                 {carregandoImagem
                   ? "Processando..."
                   : "Clique para enviar foto do QR code"}
               </span>
-              <span className="mt-1 text-sm text-[var(--muted-foreground)]">
+              <span className="mt-1 text-sm text-muted-foreground">
                 ou arraste a imagem aqui
               </span>
               <input
@@ -156,29 +153,28 @@ export function EscanearCupom() {
             </label>
           </div>
 
-          <div className="flex w-full items-center gap-4 text-sm text-[var(--muted-foreground)]">
-            <span className="h-px flex-1 bg-[var(--border)]" />
+          <div className="flex w-full items-center gap-4 text-sm text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
             <span>ou</span>
-            <span className="h-px flex-1 bg-[var(--border)]" />
+            <span className="h-px flex-1 bg-border" />
           </div>
 
           <button
             type="button"
             onClick={() => setModoManual(true)}
-            className="rounded-lg border border-[var(--primary)] bg-transparent px-5 py-2.5 font-medium text-[var(--primary)] transition-colors hover:bg-[var(--secondary)]"
+            className="rounded-lg border border-primary bg-transparent px-5 py-2.5 font-medium text-primary transition-colors hover:bg-secondary"
           >
             Inserir URL manualmente
           </button>
         </div>
       )}
 
-      {/* Modo manual */}
       {modoManual && !conteudoLido && (
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)] p-6">
-          <h3 className="mb-2 text-lg font-semibold text-[var(--foreground)]">
+        <div className="rounded-xl border border-border bg-muted p-6">
+          <h3 className="mb-2 text-lg font-semibold text-foreground">
             Inserir URL do cupom
           </h3>
-          <p className="mb-4 text-sm text-[var(--muted-foreground)]">
+          <p className="mb-4 text-sm text-muted-foreground">
             Cole a URL que esta no QR code do cupom fiscal:
           </p>
           <input
@@ -186,13 +182,13 @@ export function EscanearCupom() {
             placeholder="https://www.nfce.fazenda.sp.gov.br/..."
             value={urlManual}
             onChange={(e) => setUrlManual(e.target.value)}
-            className="mb-4 w-full rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--ring)] focus:ring-2 focus:ring-[var(--ring)]/20"
+            className="mb-4 w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
           />
           <div className="flex flex-wrap justify-center gap-3">
             <button
               type="button"
               onClick={recomecar}
-              className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-5 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--muted)]"
+              className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               Voltar
             </button>
@@ -200,7 +196,7 @@ export function EscanearCupom() {
               type="button"
               onClick={enviarUrlManual}
               disabled={!urlManual.trim()}
-              className="rounded-lg bg-[var(--primary)] px-5 py-2.5 text-sm font-medium text-[var(--primary-foreground)] transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               Usar esta URL
             </button>
@@ -208,14 +204,13 @@ export function EscanearCupom() {
         </div>
       )}
 
-      {/* Resultado da leitura */}
       {conteudoLido && !notaProcessada && (
-        <section className="rounded-xl border border-[#bbf7d0] bg-[var(--secondary)] p-6">
-          <h2 className="mb-3 text-xl font-semibold text-[var(--primary)]">
+        <section className="rounded-xl border border-accent/30 bg-secondary p-6">
+          <h2 className="mb-3 text-xl font-semibold text-primary">
             QR code lido com sucesso!
           </h2>
           <p
-            className="mb-4 break-all rounded-md bg-[#dcfce7] p-3 font-mono text-xs text-[var(--primary)]"
+            className="mb-4 break-all rounded-md bg-accent/10 p-3 font-mono text-xs text-primary"
             title={conteudoLido}
           >
             {conteudoLido}
@@ -223,7 +218,7 @@ export function EscanearCupom() {
           {erro && (
             <div
               role="alert"
-              className="mt-4 rounded-lg bg-[var(--destructive-background)] p-4 text-center text-[var(--destructive)]"
+              className="mt-4 rounded-lg bg-destructive-background p-4 text-center text-destructive"
             >
               <p>{erro}</p>
             </div>
@@ -232,7 +227,7 @@ export function EscanearCupom() {
             <button
               type="button"
               onClick={recomecar}
-              className="rounded-lg border border-[var(--border)] bg-[var(--card)] px-5 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--muted)]"
+              className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               Voltar
             </button>
@@ -240,7 +235,7 @@ export function EscanearCupom() {
               type="button"
               onClick={enviarParaProcessar}
               disabled={processando}
-              className="rounded-lg bg-[var(--primary)] px-5 py-2.5 text-sm font-medium text-[var(--primary-foreground)] transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               {processando ? "Processando..." : "Processar nota"}
             </button>
@@ -248,49 +243,45 @@ export function EscanearCupom() {
         </section>
       )}
 
-      {/* Nota processada */}
       {notaProcessada && (
-        <section className="rounded-xl bg-[var(--card)] p-6 shadow-lg">
-          <h2 className="mb-4 text-xl font-semibold text-[var(--accent)]">
+        <section className="rounded-xl bg-card p-6 shadow-lg">
+          <h2 className="mb-4 text-xl font-semibold text-accent">
             Nota Fiscal Processada
           </h2>
           <div className="flex flex-col gap-2">
-            <p className="text-sm">
-              <strong className="text-[var(--foreground)]">
-                Estabelecimento:
-              </strong>{" "}
+            <p className="text-sm text-foreground">
+              <strong>Estabelecimento:</strong>{" "}
               {notaProcessada.estabelecimento}
             </p>
-            <p className="text-sm">
-              <strong className="text-[var(--foreground)]">Numero:</strong>{" "}
-              {notaProcessada.numero}
+            <p className="text-sm text-foreground">
+              <strong>Numero:</strong> {notaProcessada.numero}
             </p>
-            <p className="text-sm">
-              <strong className="text-[var(--foreground)]">Valor Total:</strong>{" "}
-              R$ {notaProcessada.valorTotal.toFixed(2)}
+            <p className="text-sm text-foreground">
+              <strong>Valor Total:</strong> R${" "}
+              {notaProcessada.valorTotal.toFixed(2)}
             </p>
-            <p className="text-sm">
-              <strong className="text-[var(--foreground)]">Valor Pago:</strong>{" "}
-              R$ {notaProcessada.valorPago.toFixed(2)}
+            <p className="text-sm text-foreground">
+              <strong>Valor Pago:</strong> R${" "}
+              {notaProcessada.valorPago.toFixed(2)}
             </p>
           </div>
 
-          <h3 className="mt-6 mb-3 border-b border-[var(--border)] pb-2 text-sm font-semibold text-[var(--foreground)]">
+          <h3 className="mt-6 mb-3 border-b border-border pb-2 text-sm font-semibold text-foreground">
             Produtos ({notaProcessada.produtos.length})
           </h3>
           <ul className="max-h-72 overflow-y-auto">
             {notaProcessada.produtos.map((produto, index) => (
               <li
                 key={index}
-                className="grid grid-cols-[1fr_auto_auto] gap-2 border-b border-[var(--muted)] py-3 text-sm last:border-b-0"
+                className="grid grid-cols-[1fr_auto_auto] gap-2 border-b border-muted py-3 text-sm last:border-b-0"
               >
-                <span className="font-medium text-[var(--foreground)]">
+                <span className="font-medium text-foreground">
                   {produto.nome}
                 </span>
-                <span className="text-right text-[var(--muted-foreground)]">
+                <span className="text-right text-muted-foreground">
                   {produto.quantidade} {produto.unidade}
                 </span>
-                <span className="min-w-20 text-right font-semibold text-[var(--accent)]">
+                <span className="min-w-20 text-right font-semibold text-accent">
                   R$ {produto.valorTotal.toFixed(2)}
                 </span>
               </li>
@@ -301,7 +292,7 @@ export function EscanearCupom() {
             <button
               type="button"
               onClick={recomecar}
-              className="rounded-lg bg-[var(--primary)] px-5 py-2.5 text-sm font-medium text-[var(--primary-foreground)] transition-colors hover:bg-[var(--primary-hover)]"
+              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
             >
               Processar outro cupom
             </button>
@@ -324,7 +315,7 @@ function CameraIcon() {
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="text-[var(--accent)]"
+      className="text-accent"
       aria-hidden="true"
     >
       <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />

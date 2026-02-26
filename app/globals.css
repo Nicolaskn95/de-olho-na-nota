@@ -1,23 +1,24 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #1f2937;
-  --primary: #166534;
-  --primary-hover: #15803d;
-  --primary-foreground: #ffffff;
-  --secondary: #f0fdf4;
-  --secondary-foreground: #166534;
-  --accent: #10b981;
-  --accent-foreground: #ffffff;
-  --muted: #f8fafc;
-  --muted-foreground: #6b7280;
-  --border: #e5e7eb;
-  --ring: #10b981;
-  --destructive: #b91c1c;
-  --destructive-background: #fef2f2;
-  --card: #ffffff;
-  --card-foreground: #1f2937;
+@theme inline {
+  --font-sans: 'Inter', 'Inter Fallback', system-ui, sans-serif;
+  --color-background: #ffffff;
+  --color-foreground: #1f2937;
+  --color-primary: #166534;
+  --color-primary-hover: #15803d;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f0fdf4;
+  --color-secondary-foreground: #166534;
+  --color-accent: #10b981;
+  --color-accent-foreground: #ffffff;
+  --color-muted: #f8fafc;
+  --color-muted-foreground: #6b7280;
+  --color-destructive: #b91c1c;
+  --color-destructive-background: #fef2f2;
+  --color-border: #e5e7eb;
+  --color-ring: #10b981;
+  --color-card: #ffffff;
+  --color-card-foreground: #1f2937;
   --radius: 0.75rem;
 }
 
@@ -28,9 +29,8 @@
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
