@@ -2,7 +2,10 @@ import { useState } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
 import './EscanearCupom.css'
 
+console.log('[EscanearCupom.tsx] Módulo carregado')
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+console.log('[EscanearCupom.tsx] API_URL:', API_URL)
 
 interface NotaFiscalResponse {
   _id: string
@@ -21,6 +24,7 @@ interface NotaFiscalResponse {
 }
 
 export function EscanearCupom() {
+  console.log('[EscanearCupom] Componente renderizando...')
   const [conteudoLido, setConteudoLido] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [urlManual, setUrlManual] = useState('')
