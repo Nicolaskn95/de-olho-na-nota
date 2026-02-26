@@ -1,60 +1,95 @@
 .escanear-cupom {
-  max-width: 100%;
-  padding: 1rem;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 1.5rem;
   box-sizing: border-box;
 }
 
 .escanear-cupom__header {
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .escanear-cupom__header h1 {
   margin: 0 0 0.5rem;
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #166534;
 }
 
 .escanear-cupom__header p {
   margin: 0;
-  color: var(--color-text-muted, #666);
-  font-size: 0.95rem;
+  color: #6b7280;
+  font-size: 1rem;
 }
 
-/* Device selector */
-.escanear-cupom__devices {
+/* Upload Area */
+.escanear-cupom__upload-area {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.escanear-cupom__upload-box {
+  width: 100%;
+}
+
+.escanear-cupom__upload-label {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.escanear-cupom__devices label {
-  font-size: 0.9rem;
-  color: #374151;
-}
-
-.escanear-cupom__select {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: #fff;
+  padding: 3rem 2rem;
+  border: 2px dashed #10b981;
+  border-radius: 12px;
+  background: #f0fdf4;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
-.escanear-cupom__select:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+.escanear-cupom__upload-label:hover {
+  background: #dcfce7;
+  border-color: #059669;
 }
 
-/* Scanner container */
-.escanear-cupom__scanner-container {
-  display: flex;
-  justify-content: center;
+.escanear-cupom__upload-icon {
+  font-size: 3rem;
   margin-bottom: 1rem;
+}
+
+.escanear-cupom__upload-text {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #166534;
+  margin-bottom: 0.5rem;
+}
+
+.escanear-cupom__upload-hint {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.escanear-cupom__upload-input {
+  display: none;
+}
+
+/* Divider */
+.escanear-cupom__divider {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.escanear-cupom__divider::before,
+.escanear-cupom__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
 }
 
 /* Erro */
@@ -71,17 +106,22 @@
   margin: 0 0 0.75rem;
 }
 
+.escanear-cupom__erro--inline {
+  margin-top: 1rem;
+  margin-bottom: 0;
+}
+
 /* Resultado */
 .escanear-cupom__resultado {
-  padding: 1rem;
+  padding: 1.5rem;
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .escanear-cupom__resultado h2 {
-  margin: 0 0 0.5rem;
-  font-size: 1.1rem;
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #166534;
 }
@@ -101,21 +141,22 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+  justify-content: center;
 }
 
 /* Botões */
 .escanear-cupom__btn {
-  padding: 0.6rem 1rem;
+  padding: 0.75rem 1.25rem;
   border-radius: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid #d1d5db;
   background: #fff;
-  font-size: 0.95rem;
+  font-size: 1rem;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 
 .escanear-cupom__btn:hover {
-  background: #f5f5f5;
+  background: #f9fafb;
 }
 
 .escanear-cupom__btn:disabled {
@@ -133,87 +174,51 @@
   background: #15803d;
 }
 
-.escanear-cupom__btn--link {
+.escanear-cupom__btn--secundario {
   background: transparent;
-  border: none;
-  color: #3b82f6;
-  text-decoration: underline;
-  padding: 0.5rem;
+  border-color: #166534;
+  color: #166534;
 }
 
-.escanear-cupom__btn--link:hover {
-  color: #1d4ed8;
-  background: transparent;
-}
-
-/* Alternativa */
-.escanear-cupom__alternativa {
-  text-align: center;
-  padding: 1rem;
-  margin-top: 0.5rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.escanear-cupom__alternativa-titulo {
-  margin: 0 0 0.75rem;
-  font-size: 0.9rem;
-  color: #6b7280;
-}
-
-.escanear-cupom__alternativa-botoes {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.escanear-cupom__btn--upload {
-  display: inline-block;
-  cursor: pointer;
-  background: #f3f4f6;
-  border: 1px dashed #9ca3af;
-}
-
-.escanear-cupom__btn--upload:hover {
-  background: #e5e7eb;
-  border-color: #6b7280;
+.escanear-cupom__btn--secundario:hover {
+  background: #f0fdf4;
 }
 
 /* Modo manual */
 .escanear-cupom__manual {
-  padding: 1rem;
+  padding: 1.5rem;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  margin-top: 1rem;
+  border-radius: 12px;
 }
 
 .escanear-cupom__manual h3 {
   margin: 0 0 0.5rem;
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
+  color: #1f2937;
 }
 
 .escanear-cupom__manual p {
-  margin: 0 0 0.75rem;
-  font-size: 0.9rem;
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
   color: #64748b;
 }
 
 .escanear-cupom__input {
   width: 100%;
   padding: 0.75rem;
-  font-size: 0.95rem;
+  font-size: 1rem;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
   box-sizing: border-box;
 }
 
 .escanear-cupom__input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 /* Nota Fiscal Processada */
@@ -221,7 +226,7 @@
   background: #fff;
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   text-align: left;
 }
 
