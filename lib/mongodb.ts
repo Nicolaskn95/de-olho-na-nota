@@ -1,13 +1,5 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error(
-    "Por favor, defina a variavel de ambiente MONGODB_URI no .env.local"
-  );
-}
-
 interface MongooseCache {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
@@ -32,8 +24,16 @@ export async function connectToDatabase() {
     return cached.conn;
   }
 
+  const MONGODB_URI = process.env.MONGODB_URI;
+
+  if (!MONGODB_URI) {
+    throw new Error(
+      "Por favor, defina a variavel de ambiente MONGODB_URI no .env.local"
+    );
+  }
+
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI!).then((m) => m);
+    cached.promise = mongoose.connect(MONGODB_URI).then((m) => m);
   }
 
   cached.conn = await cached.promise;
