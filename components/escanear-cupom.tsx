@@ -2,6 +2,8 @@
 
 import { useState, useCallback } from "react";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+
 interface NotaFiscalResponse {
   _id: string;
   chaveAcesso: string;
@@ -43,7 +45,7 @@ export function EscanearCupom() {
     setErro(null);
 
     try {
-      const response = await fetch("/api/notas-fiscais/processar", {
+      const response = await fetch(`${API_URL}/notas-fiscais/processar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: conteudoLido }),
