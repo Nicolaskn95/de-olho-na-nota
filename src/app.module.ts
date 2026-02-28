@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { NotaFiscalModule } from './nota-fiscal/nota-fiscal.module';
+import { CategoriaModule } from './categoria/categoria.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { NotaFiscalModule } from './nota-fiscal/nota-fiscal.module';
       }),
     }),
     NotaFiscalModule,
+    CategoriaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
