@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import axios from 'axios';
@@ -50,7 +50,7 @@ export class NotaFiscalService {
     });
 
     if (notaExistente) {
-      return notaExistente;
+      throw new ConflictException('Esta nota fiscal já foi cadastrada anteriormente');
     }
 
     const nota = new this.notaFiscalModel({
