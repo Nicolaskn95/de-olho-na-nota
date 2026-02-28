@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Categoria } from './schemas/categoria.schema';
 
-interface CategoriaSeed {
+interface CategoriaSeedData {
   codigo: string;
   nome: string;
   descricao: string;
@@ -11,7 +11,7 @@ interface CategoriaSeed {
   cor: string;
 }
 
-const CATEGORIAS_PADRAO: CategoriaSeed[] = [
+const CATEGORIAS_PADRAO: CategoriaSeedData[] = [
   {
     codigo: 'ACOUGUE_E_PEIXARIA',
     nome: 'Açougue e Peixaria',
