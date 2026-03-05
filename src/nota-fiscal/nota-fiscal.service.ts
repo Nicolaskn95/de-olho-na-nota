@@ -30,6 +30,26 @@ interface DadosNotaFiscal {
   produtos: ProdutoExtraido[];
 }
 
+/** Remove quebras de linha e múltiplos espaços */
+function normalizarTexto(val: string): string {
+  if (typeof val !== 'string') return '';
+  return val.replace(/\s+/g, ' ').trim();
+}
+
+/** Siglas de estado que às vezes aparecem no início (layout da página) */
+const SIGLAS_ESTADO =
+  /^(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MG|MS|MT|PA|PB|PR|PE|PI|RJ|RN|RO|RS|SC|SP|SE|TO)\s+/i;
+/** Unidades que às vezes vêm coladas no final do nome no HTML */
+const UNIDADES_SUFIXO =
+  /\s+(UN|CX|BJ|KG|G|PCT|PC|LT|ML|GR|PÇ|PAR|KIT|FD|SC|DG|TB|AM|FR|PT|TR|VD|EMB|LATA|BARRA)\s*$/i;
+
+function normalizarNomeProduto(val: string): string {
+  let limpo = normalizarTexto(val);
+  limpo = limpo.replace(SIGLAS_ESTADO, '').trim() || limpo;
+  limpo = limpo.replace(UNIDADES_SUFIXO, '').trim() || limpo;
+  return limpo;
+}
+
 @Injectable()
 export class NotaFiscalService {
   constructor(
@@ -109,11 +129,36 @@ export class NotaFiscalService {
   private extrairDados(html: string): DadosNotaFiscal {
     const $ = cheerio.load(html);
 
-    const estabelecimento = $('body')
-      .text()
-      .match(/(?:CNPJ[:\s]*[\d./-]+[\s\S]*?)([\w\s]+(?:LTDA|S\/A|SA|ME|EPP|EIRELI))/i)?.[1]?.trim() ||
-      $('div').first().text().split('\n').find((l) => l.trim().length > 5)?.trim() ||
-      'Estabelecimento não identificado';
+    const textoBody = $('body').text();
+
+    let estabelecimento = '';
+
+    // Tenta pegar a linha imediatamente antes do CNPJ (geralmente o nome da loja)
+    const estCnpjMatch = textoBody.match(/([^\n]*?)\s*CNPJ[:\s]*[\d./-]+/i);
+    if (estCnpjMatch) {
+      estabelecimento = normalizarTexto(estCnpjMatch[1]);
+    }
+
+    // Fallback: primeira linha de texto "boa" que não pareça produto nem metadado
+    if (!estabelecimento) {
+      const linhas = textoBody
+        .split('\n')
+        .map((l) => normalizarTexto(l))
+        .filter((l) => l.length > 3);
+
+      const linhaCandidata = linhas.find((l) => {
+        if (/^\d+\s/.test(l)) return false; // evita linhas tipo "99 CREME"
+        if (l.toUpperCase().includes('CNPJ')) return false;
+        if (/EMISS[ÃA]O|CHAVE|NFC-E|CONSUMIDOR|ENDEREÇO|CPF/i.test(l)) {
+          return false;
+        }
+        return true;
+      });
+
+      if (linhaCandidata) {
+        estabelecimento = linhaCandidata;
+      }
+    }
 
     const cnpjMatch = $('body').text().match(/CNPJ[:\s]*([\d./-]+)/i);
     const cnpj = cnpjMatch ? cnpjMatch[1].trim() : '';
@@ -198,15 +243,20 @@ export class NotaFiscalService {
     );
 
     if (linhasProduto) {
+      const codigosIncluidos = new Set<string>();
       for (const linha of linhasProduto) {
         const match = linha.match(
           /([A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ\s\d/]+)\s*\(Código[:\s]*(\d+)\s*\)\s*Qtde\.?[:\s]*([\d.,]+)\s*UN[:\s]*(\w+)\s*Vl\.?\s*Unit\.?[:\s]*([\d.,]+)\s*Vl\.?\s*Total\s*([\d.,]+)/i,
         );
 
         if (match) {
+          const codigo = match[2];
+          if (codigosIncluidos.has(codigo)) continue;
+          codigosIncluidos.add(codigo);
+
           produtos.push({
-            nome: match[1].trim(),
-            codigo: match[2],
+            nome: normalizarNomeProduto(match[1]),
+            codigo,
             quantidade: parseFloat(match[3].replace(',', '.')),
             unidade: match[4],
             valorUnitario: parseFloat(match[5].replace(',', '.')),
