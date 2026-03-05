@@ -276,4 +276,50 @@ export class NotaFiscalService {
   async buscarPorId(id: string): Promise<NotaFiscal | null> {
     return this.notaFiscalModel.findById(id).populate('produtos').exec();
   }
+
+  async listarEstabelecimentos(): Promise<
+    { cnpj: string; estabelecimento: string; totalNotas: number }[]
+  > {
+    const resultado = await this.notaFiscalModel
+      .aggregate([
+        {
+          $group: {
+            _id: '$cnpj',
+            cnpj: { $first: '$cnpj' },
+            estabelecimento: { $first: '$estabelecimento' },
+            totalNotas: { $sum: 1 },
+          },
+        },
+        { $sort: { cnpj: 1 } },
+      ])
+      .exec();
+
+    return resultado as {
+      cnpj: string;
+      estabelecimento: string;
+      totalNotas: number;
+    }[];
+  }
+
+  async atualizarNomeEstabelecimento(cnpj: string, novoNome: string) {
+    const estabelecimentoNormalizado = normalizarTexto(novoNome);
+
+    const resultado = await this.notaFiscalModel.updateMany(
+      { cnpj },
+      { $set: { estabelecimento: estabelecimentoNormalizado } },
+    );
+
+    const modificados =
+      // Mongoose 7
+      (resultado as any).modifiedCount ??
+      // Mongoose 5/6
+      (resultado as any).nModified ??
+      0;
+
+    return {
+      cnpj,
+      estabelecimento: estabelecimentoNormalizado,
+      notasAtualizadas: modificados,
+    };
+  }
 }
