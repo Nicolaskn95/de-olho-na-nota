@@ -1,14 +1,14 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Categoria } from './schemas/categoria.schema';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common'
+import { InjectModel } from '@nestjs/mongoose'
+import { Model } from 'mongoose'
+import { Categoria } from './schemas/categoria.schema'
 
 interface CategoriaSeedData {
-  codigo: string;
-  nome: string;
-  descricao: string;
-  icone: string;
-  cor: string;
+  codigo: string
+  nome: string
+  descricao: string
+  icone: string
+  cor: string
 }
 
 const CATEGORIAS_PADRAO: CategoriaSeedData[] = [
@@ -89,11 +89,11 @@ const CATEGORIAS_PADRAO: CategoriaSeedData[] = [
     icone: 'Lamp',
     cor: '#64748b',
   },
-];
+]
 
 @Injectable()
 export class CategoriaSeed implements OnModuleInit {
-  private readonly logger = new Logger(CategoriaSeed.name);
+  private readonly logger = new Logger(CategoriaSeed.name)
 
   constructor(
     @InjectModel(Categoria.name)
@@ -101,23 +101,23 @@ export class CategoriaSeed implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    await this.seed();
+    await this.seed()
   }
 
   async seed() {
-    this.logger.log('Iniciando seed de categorias...');
+    this.logger.log('Iniciando seed de categorias...')
 
-    let categoriasAdicionadas = 0;
+    let categoriasAdicionadas = 0
     for (const cat of CATEGORIAS_PADRAO) {
-      const existe = await this.categoriaModel.findOne({ codigo: cat.codigo });
+      const existe = await this.categoriaModel.findOne({ codigo: cat.codigo })
       if (!existe) {
-        await this.categoriaModel.create(cat);
-        categoriasAdicionadas++;
+        await this.categoriaModel.create(cat)
+        categoriasAdicionadas++
       }
     }
 
     this.logger.log(
       `Seed concluído: ${categoriasAdicionadas} categorias adicionadas`,
-    );
+    )
   }
 }

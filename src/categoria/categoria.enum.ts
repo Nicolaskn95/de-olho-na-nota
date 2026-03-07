@@ -24,4 +24,4 @@ export const CategoriaLabels: Record<CategoriaProduto, string> = {
   [CategoriaProduto.HIGIENE_E_BELEZA]: 'Higiene e Beleza',
   [CategoriaProduto.PET_SHOP]: 'Pet Shop',
   [CategoriaProduto.UTILIDADES_DOMESTICAS]: 'Utilidades Domésticas',
-};
+}
