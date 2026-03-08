@@ -20,46 +20,53 @@ const CATEGORIAS_PADRAO: CategoriaSeedData[] = [
     cor: '#dc2626',
   },
   {
-    codigo: 'HORTIFRUTI',
-    nome: 'Hortifruti',
-    descricao: 'Frutas, legumes e verduras frescas',
+    codigo: 'HORTIFRUTI_FRUTAS',
+    nome: 'Frutas',
+    descricao: 'Frutas frescas e in natura',
     icone: 'Apple',
-    cor: '#16a34a',
+    cor: '#eab308',
+  },
+  {
+    codigo: 'HORTIFRUTI_VERDURAS_E_LEGUMES',
+    nome: 'Verduras e Legumes',
+    descricao: 'Hortaliças, folhas e legumes frescos',
+    icone: 'leafy-green',
+    cor: '#22c55e',
   },
   {
     codigo: 'LATICINIOS_E_OVOS',
     nome: 'Laticínios e Ovos',
     descricao: 'Leite, queijos, iogurtes e ovos',
     icone: 'Milk',
-    cor: '#f59e0b',
+    cor: '#cbd5e1',
   },
   {
     codigo: 'PADARIA_E_CONFEITARIA',
     nome: 'Padaria e Confeitaria',
     descricao: 'Pães, bolos, tortas e salgados',
     icone: 'Croissant',
-    cor: '#d97706',
+    cor: '#92400e',
   },
   {
     codigo: 'MERCEARIA_SECA',
     nome: 'Mercearia Seca',
     descricao: 'Arroz, feijão, massas, óleos e grãos',
     icone: 'Package',
-    cor: '#8b5cf6',
+    cor: '#6d28d9',
   },
   {
     codigo: 'CONGELADOS',
     nome: 'Congelados',
     descricao: 'Pratos prontos, sorvetes e vegetais congelados',
     icone: 'Snowflake',
-    cor: '#0ea5e9',
+    cor: '#3b82f6',
   },
   {
     codigo: 'BEBIDAS',
     nome: 'Bebidas',
     descricao: 'Sucos, refrigerantes, águas e bebidas alcoólicas',
     icone: 'Wine',
-    cor: '#ec4899',
+    cor: '#db2777',
   },
   {
     codigo: 'LIMPEZA',
@@ -80,14 +87,14 @@ const CATEGORIAS_PADRAO: CategoriaSeedData[] = [
     nome: 'Pet Shop',
     descricao: 'Rações e itens para animais de estimação',
     icone: 'PawPrint',
-    cor: '#a855f7',
+    cor: '#f97316',
   },
   {
     codigo: 'UTILIDADES_DOMESTICAS',
     nome: 'Utilidades Domésticas',
     descricao: 'Utensílios de cozinha, lâmpadas e bazar',
     icone: 'Lamp',
-    cor: '#64748b',
+    cor: '#475569',
   },
 ]
 
@@ -109,7 +116,9 @@ export class CategoriaSeed implements OnModuleInit {
 
     let categoriasAdicionadas = 0
     for (const cat of CATEGORIAS_PADRAO) {
-      const existe = await this.categoriaModel.findOne({ codigo: cat.codigo })
+      const existe = await this.categoriaModel.findOneAndUpdate({
+        codigo: cat.codigo,
+      })
       if (!existe) {
         await this.categoriaModel.create(cat)
         categoriasAdicionadas++
