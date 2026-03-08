@@ -312,4 +312,116 @@ export class NotaFiscalService {
       notasAtualizadas: modificados,
     }
   }
+
+  async listarNomesProdutos(busca?: string): Promise<string[]> {
+    const query = busca?.trim()
+      ? { nome: { $regex: busca.trim(), $options: 'i' } }
+      : {}
+    const nomes = await this.produtoModel.distinct('nome', query).exec()
+    return (nomes as string[]).filter((n) => n?.trim()).sort((a, b) => a.localeCompare(b))
+  }
+
+  async sugerirProdutosParecidos(nomeProduto: string): Promise<string[]> {
+    const nome = nomeProduto?.trim()
+    if (!nome) return []
+
+    const primeiraPalavra = nome.split(/\s+/)[0]
+    if (!primeiraPalavra || primeiraPalavra.length < 2) return []
+
+    const regex = new RegExp(primeiraPalavra.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+    const todos = await this.produtoModel.distinct('nome', { nome: regex }).exec()
+    const lista = (todos as string[])
+      .filter((n) => n?.trim() && n.trim() !== nome)
+      .sort((a, b) => a.localeCompare(b))
+    return lista.slice(0, 20)
+  }
+
+  async compararDuracaoProdutos(
+    nome1: string,
+    nome2: string,
+  ): Promise<{
+    produto1: { nome: string; totalCompras: number; duracaoMediaDias: number | null; duracaoEntreComprasDias: number[] }
+    produto2: { nome: string; totalCompras: number; duracaoMediaDias: number | null; duracaoEntreComprasDias: number[] }
+  }> {
+    const notas = await this.notaFiscalModel.find().populate('produtos').exec()
+
+    type Duracao = {
+      datasOrdenadas: Date[]
+      duracaoEntreComprasDias: number[]
+      duracaoMediaDias: number | null
+      totalCompras: number
+    }
+
+    const mapa = new Map<string, Duracao>()
+
+    const addData = (nome: string, data: Date) => {
+      const n = nome?.trim()
+      if (!n || (n !== nome1.trim() && n !== nome2.trim())) return
+      const existente = mapa.get(n)
+      if (existente) {
+        existente.datasOrdenadas.push(data)
+      } else {
+        mapa.set(n, {
+          datasOrdenadas: [data],
+          duracaoEntreComprasDias: [],
+          duracaoMediaDias: null,
+          totalCompras: 0,
+        })
+      }
+    }
+
+    for (const nota of notas) {
+      const dataNota = nota.dataEmissao instanceof Date ? nota.dataEmissao : new Date(nota.dataEmissao)
+      for (const p of (nota.produtos || []) as { nome?: string }[]) {
+        const nome = p.nome?.trim()
+        if (nome) addData(nome, dataNota)
+      }
+    }
+
+    mapa.forEach((valor) => {
+      const datas = valor.datasOrdenadas
+      datas.sort((a, b) => a.getTime() - b.getTime())
+      valor.totalCompras = datas.length
+      const duracaoEntre: number[] = []
+      for (let i = 1; i < datas.length; i++) {
+        const dias = Math.round(
+          (datas[i].getTime() - datas[i - 1].getTime()) / (1000 * 60 * 60 * 24),
+        )
+        duracaoEntre.push(dias)
+      }
+      valor.duracaoEntreComprasDias = duracaoEntre
+      valor.duracaoMediaDias =
+        duracaoEntre.length > 0
+          ? Math.round(duracaoEntre.reduce((a, b) => a + b, 0) / duracaoEntre.length)
+          : null
+    })
+
+    const d1 = mapa.get(nome1.trim()) ?? {
+      datasOrdenadas: [],
+      duracaoEntreComprasDias: [],
+      duracaoMediaDias: null,
+      totalCompras: 0,
+    }
+    const d2 = mapa.get(nome2.trim()) ?? {
+      datasOrdenadas: [],
+      duracaoEntreComprasDias: [],
+      duracaoMediaDias: null,
+      totalCompras: 0,
+    }
+
+    return {
+      produto1: {
+        nome: nome1,
+        totalCompras: d1.totalCompras,
+        duracaoMediaDias: d1.duracaoMediaDias,
+        duracaoEntreComprasDias: d1.duracaoEntreComprasDias,
+      },
+      produto2: {
+        nome: nome2,
+        totalCompras: d2.totalCompras,
+        duracaoMediaDias: d2.duracaoMediaDias,
+        duracaoEntreComprasDias: d2.duracaoEntreComprasDias,
+      },
+    }
+  }
 }
