@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { NotaFiscalModule } from './nota-fiscal/nota-fiscal.module';
 import { CategoriaModule } from './categoria/categoria.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CategoriaModule } from './categoria/categoria.module';
     }),
     NotaFiscalModule,
     CategoriaModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

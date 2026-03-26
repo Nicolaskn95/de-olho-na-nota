@@ -3,8 +3,13 @@ import { Document, Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class NotaFiscal extends Document {
-  @Prop({ required: true, unique: true })
+  // A chave de acesso pode existir para mais de um usuário (por isso não é unique global).
+  @Prop({ required: true })
   chaveAcesso: string;
+
+  // ID do usuário logado que escaneou/cadastrou a nota fiscal (vem do JWT "sub").
+  @Prop({ required: true, index: true, type: Types.ObjectId, ref: 'User' })
+  userId: Types.ObjectId;
 
   @Prop({ required: true })
   numero: string;
@@ -44,3 +49,11 @@ export class NotaFiscal extends Document {
 }
 
 export const NotaFiscalSchema = SchemaFactory.createForClass(NotaFiscal);
+
+// Unique por (chaveAcesso, userId).
+// Evita cadastrar a mesma nota duas vezes pelo mesmo usuário, mas permite usuários diferentes.
+NotaFiscalSchema.index(
+  { chaveAcesso: 1, userId: 1 },
+  // Garante que documentos antigos sem userId não travem a criação do índice.
+  { unique: true, sparse: true },
+);

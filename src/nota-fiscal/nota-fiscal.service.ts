@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { NotaFiscal } from './schemas/nota-fiscal.schema';
@@ -37,7 +37,7 @@ export class NotaFiscalService {
     @InjectModel(Produto.name) private produtoModel: Model<Produto>,
   ) {}
 
-  async processarUrl(url: string): Promise<NotaFiscal> {
+  async processarUrl(url: string, userId: string): Promise<NotaFiscal> {
     if (!this.isUrlNotaFiscalValida(url)) {
       throw new BadRequestException('URL de nota fiscal inválida');
     }
@@ -45,8 +45,11 @@ export class NotaFiscalService {
     const html = await this.buscarPagina(url);
     const dados = this.extrairDados(html);
 
+    const userObjectId = new Types.ObjectId(userId);
     const notaExistente = await this.notaFiscalModel.findOne({
       chaveAcesso: dados.chaveAcesso,
+      // Compat: notas antigas podem ter userId como string.
+      $or: [{ userId: userObjectId }, { userId }],
     });
 
     if (notaExistente) {
@@ -57,6 +60,7 @@ export class NotaFiscalService {
       ...dados,
       urlOriginal: url,
       produtos: [],
+      userId: userObjectId,
     });
     await nota.save();
 
@@ -220,10 +224,60 @@ export class NotaFiscalService {
   }
 
   async listarNotas(): Promise<NotaFiscal[]> {
+    // Deprecated - mantém compatibilidade interna caso exista algum chamador antigo.
+    // O fluxo correto deve ser listarNotas(userId).
     return this.notaFiscalModel.find().populate('produtos').exec();
   }
 
-  async buscarPorId(id: string): Promise<NotaFiscal | null> {
-    return this.notaFiscalModel.findById(id).populate('produtos').exec();
+  async listarNotasPorUsuario(userId: string): Promise<NotaFiscal[]> {
+    const userObjectId = new Types.ObjectId(userId);
+    // #region agent log
+    fetch('http://127.0.0.1:7461/ingest/67ad9434-be4c-4cd5-8952-2c823b0fe782',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7f2e24'},body:JSON.stringify({sessionId:'7f2e24',runId:'pre',hypothesisId:'H3',location:'nota-fiscal.service.ts:listarNotasPorUsuario',message:'Query notas by user',data:{userIdStrLen:userId?.length||0,userObjectIdHex:userObjectId.toHexString()},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    const [
+      totalCount,
+      withUserIdCount,
+      withoutUserIdCount,
+      matchObjectIdCount,
+      matchStringCount,
+    ] = await Promise.all([
+      this.notaFiscalModel.countDocuments({}).catch(() => -1),
+      this.notaFiscalModel
+        .countDocuments({ userId: { $exists: true } })
+        .catch(() => -1),
+      this.notaFiscalModel
+        .countDocuments({ userId: { $exists: false } })
+        .catch(() => -1),
+      this.notaFiscalModel
+        .countDocuments({ userId: userObjectId })
+        .catch(() => -1),
+      this.notaFiscalModel
+        .countDocuments({ userId })
+        .catch(() => -1),
+    ]);
+
+    // #region agent log
+    fetch('http://127.0.0.1:7461/ingest/67ad9434-be4c-4cd5-8952-2c823b0fe782',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7f2e24'},body:JSON.stringify({sessionId:'7f2e24',runId:'pre',hypothesisId:'H3',location:'nota-fiscal.service.ts:listarNotasPorUsuario:counts',message:'DB counts for user matching',data:{totalCount,withUserIdCount,withoutUserIdCount,matchObjectIdCount,matchStringCount,userIdEnds:userId?.slice(-6)},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+
+    const notas = await this.notaFiscalModel
+      // Compat: notas antigas podem ter userId como string.
+      .find({ $or: [{ userId: userObjectId }, { userId }] })
+      .populate('produtos')
+      .exec();
+    // #region agent log
+    fetch('http://127.0.0.1:7461/ingest/67ad9434-be4c-4cd5-8952-2c823b0fe782',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7f2e24'},body:JSON.stringify({sessionId:'7f2e24',runId:'pre',hypothesisId:'H3',location:'nota-fiscal.service.ts:listarNotasPorUsuario:result',message:'Notas query result',data:{count:Array.isArray(notas)?notas.length:-1},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    return notas;
+  }
+
+  async buscarPorId(id: string, userId: string): Promise<NotaFiscal | null> {
+    return this.notaFiscalModel
+      .findOne({
+        _id: id,
+        $or: [{ userId: new Types.ObjectId(userId) }, { userId }],
+      })
+      .populate('produtos')
+      .exec();
   }
 }
