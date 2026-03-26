@@ -1,6 +1,6 @@
-import { Controller, Post, Get, Delete, Put, Param, Body } from '@nestjs/common';
-import { CategoriaService } from './categoria.service';
-import { CriarPrefixoDto } from './dto/criar-prefixo.dto';
+import { Controller, Post, Get, Delete, Put, Param, Body } from '@nestjs/common'
+import { CategoriaService } from './categoria.service'
+import { CriarPrefixoDto } from './dto/criar-prefixo.dto'
 
 @Controller('categorias')
 export class CategoriaController {
@@ -10,33 +10,33 @@ export class CategoriaController {
 
   @Get()
   listarCategorias() {
-    return this.categoriaService.listarCategorias();
+    return this.categoriaService.listarCategorias()
   }
 
   @Get(':id')
   buscarCategoria(@Param('id') id: string) {
-    return this.categoriaService.buscarCategoriaPorId(id);
+    return this.categoriaService.buscarCategoriaPorId(id)
   }
 
   // ========== PREFIXOS ==========
 
   @Get('prefixos/listar')
   listarPrefixos() {
-    return this.categoriaService.listarPrefixos();
+    return this.categoriaService.listarPrefixos()
   }
 
   @Post('prefixos')
   criarPrefixo(@Body() dto: CriarPrefixoDto) {
-    return this.categoriaService.criarPrefixo(dto);
+    return this.categoriaService.criarPrefixo(dto)
   }
 
   @Put('prefixos/:id')
   atualizarPrefixo(@Param('id') id: string, @Body() dto: CriarPrefixoDto) {
-    return this.categoriaService.atualizarPrefixo(id, dto);
+    return this.categoriaService.atualizarPrefixo(id, dto)
   }
 
   @Delete('prefixos/:id')
   removerPrefixo(@Param('id') id: string) {
-    return this.categoriaService.removerPrefixo(id);
+    return this.categoriaService.removerPrefixo(id)
   }
 }

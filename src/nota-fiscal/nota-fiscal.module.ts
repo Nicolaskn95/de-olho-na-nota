@@ -1,10 +1,10 @@
-import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { NotaFiscalController } from './nota-fiscal.controller';
-import { NotaFiscalService } from './nota-fiscal.service';
-import { AuthModule } from '../auth/auth.module';
-import { NotaFiscal, NotaFiscalSchema } from './schemas/nota-fiscal.schema';
-import { Produto, ProdutoSchema } from './schemas/produto.schema';
+import { Module } from '@nestjs/common'
+import { MongooseModule } from '@nestjs/mongoose'
+import { NotaFiscalController } from './nota-fiscal.controller'
+import { NotaFiscalService } from './nota-fiscal.service'
+import { AuthModule } from '../auth/auth.module'
+import { NotaFiscal, NotaFiscalSchema } from './schemas/nota-fiscal.schema'
+import { Produto, ProdutoSchema } from './schemas/produto.schema'
 
 @Module({
   imports: [
