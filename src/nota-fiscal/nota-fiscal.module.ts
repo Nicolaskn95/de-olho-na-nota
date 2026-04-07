@@ -5,6 +5,10 @@ import { NotaFiscalService } from './nota-fiscal.service'
 import { AuthModule } from '../auth/auth.module'
 import { NotaFiscal, NotaFiscalSchema } from './schemas/nota-fiscal.schema'
 import { Produto, ProdutoSchema } from './schemas/produto.schema'
+import {
+  EstabelecimentoUsuario,
+  EstabelecimentoUsuarioSchema,
+} from './schemas/estabelecimento-usuario.schema'
 
 @Module({
   imports: [
@@ -12,6 +16,10 @@ import { Produto, ProdutoSchema } from './schemas/produto.schema'
     MongooseModule.forFeature([
       { name: NotaFiscal.name, schema: NotaFiscalSchema },
       { name: Produto.name, schema: ProdutoSchema },
+      {
+        name: EstabelecimentoUsuario.name,
+        schema: EstabelecimentoUsuarioSchema,
+      },
     ]),
   ],
   controllers: [NotaFiscalController],

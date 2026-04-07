@@ -1,6 +1,7 @@
-import { IsNotEmpty } from 'class-validator'
+import { IsNotEmpty, IsString } from 'class-validator'
 
 export class AtualizarEstabelecimentoDto {
-  @IsNotEmpty({ message: 'O nome do estabelecimento é obrigatório' })
-  estabelecimento: string
+  @IsString()
+  @IsNotEmpty({ message: 'O nome de exibição (de-para) é obrigatório' })
+  nomeDepara: string
 }

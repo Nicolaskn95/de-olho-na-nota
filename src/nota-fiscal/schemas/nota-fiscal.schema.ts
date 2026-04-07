@@ -22,6 +22,10 @@ export class NotaFiscal extends Document {
   @Prop({ required: true })
   estabelecimento: string
 
+  /** Nome do estabelecimento extraído da nota (não alterar ao aplicar de-para). */
+  @Prop()
+  estabelecimentoOriginal?: string
+
   @Prop({ required: true })
   cnpj: string
 

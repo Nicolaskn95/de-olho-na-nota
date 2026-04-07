@@ -77,7 +77,7 @@ export class NotaFiscalController {
   ) {
     return this.notaFiscalService.atualizarNomeEstabelecimento(
       cnpj,
-      dto.estabelecimento,
+      dto.nomeDepara,
       userId,
     )
   }
