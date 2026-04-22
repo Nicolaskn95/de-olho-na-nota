@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ConflictException,
   NotFoundException,
+  Logger,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
@@ -12,6 +13,7 @@ import { NotaFiscal } from "./schemas/nota-fiscal.schema";
 import { Produto } from "./schemas/produto.schema";
 import { EstabelecimentoUsuario } from "./schemas/estabelecimento-usuario.schema";
 import { DadosNotaFiscal, ProdutoExtraido } from "./interface/INotaFiscal";
+import { CaptchaSolverService } from "./captcha-solver.service";
 
 /** Remove quebras de linha e múltiplos espaços */
 function normalizarTexto(val: string): string {
@@ -35,11 +37,14 @@ function normalizarNomeProduto(val: string): string {
 
 @Injectable()
 export class NotaFiscalService {
+  private readonly logger = new Logger(NotaFiscalService.name);
+
   constructor(
     @InjectModel(NotaFiscal.name) private notaFiscalModel: Model<NotaFiscal>,
     @InjectModel(Produto.name) private produtoModel: Model<Produto>,
     @InjectModel(EstabelecimentoUsuario.name)
     private estabelecimentoUsuarioModel: Model<EstabelecimentoUsuario>,
+    private readonly captchaSolverService: CaptchaSolverService,
   ) {}
 
   async processarUrl(url: string, userId: string): Promise<NotaFiscal> {
@@ -86,6 +91,229 @@ export class NotaFiscalService {
       .findById(nota._id)
       .populate("produtos")
       .exec() as Promise<NotaFiscal>;
+  }
+
+  /**
+   * Consulta uma NFC-e pela Chave de Acesso (44 dígitos do barcode).
+   *
+   * Fluxo:
+   * 1. Acessa a página de consulta pública da NFCe SP
+   * 2. Extrai cookies de sessão e campos hidden do formulário ASP.NET
+   * 3. Baixa a imagem do CAPTCHA
+   * 4. Resolve o CAPTCHA com Tesseract OCR (pré-processado com sharp)
+   * 5. Submete o formulário com a chave + captcha
+   * 6. Faz scraping dos dados da nota fiscal na resposta
+   * 7. Salva no MongoDB usando o fluxo existente
+   *
+   * Inclui retry de até 3 tentativas caso o CAPTCHA falhe.
+   */
+  async processarChaveAcesso(
+    chaveAcesso: string,
+    userId: string,
+  ): Promise<NotaFiscal> {
+    // Validar formato da chave
+    if (!/^\d{44}$/.test(chaveAcesso)) {
+      throw new BadRequestException(
+        "Chave de acesso inválida. Deve conter exatamente 44 dígitos numéricos.",
+      );
+    }
+
+    // Verificar se já existe
+    const userObjectId = new Types.ObjectId(userId);
+    const notaExistente = await this.notaFiscalModel.findOne({
+      chaveAcesso,
+      $or: [{ userId: userObjectId }, { userId }],
+    });
+
+    if (notaExistente) {
+      throw new ConflictException(
+        "Esta nota fiscal já foi cadastrada anteriormente",
+      );
+    }
+
+    const BASE_URL =
+      "https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaPublica.aspx";
+    const MAX_TENTATIVAS = 3;
+
+    for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+      try {
+        this.logger.log(
+          `Tentativa ${tentativa}/${MAX_TENTATIVAS} de consulta por chave: ${chaveAcesso.substring(0, 10)}...`,
+        );
+
+        // 1. GET na página para obter cookies e campos do formulário
+        const paginaInicial = await axios.get(BASE_URL, {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            Accept:
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          },
+          timeout: 15000,
+          maxRedirects: 5,
+        });
+
+        // Extrair cookies da resposta
+        const setCookies = paginaInicial.headers["set-cookie"] || [];
+        const cookies = setCookies
+          .map((c: string) => c.split(";")[0])
+          .join("; ");
+
+        // Extrair campos hidden do ASP.NET
+        const $form = cheerio.load(paginaInicial.data as string);
+        const viewState = $form("#__VIEWSTATE").val() as string || "";
+        const viewStateGenerator =
+          ($form("#__VIEWSTATEGENERATOR").val() as string) || "";
+        const eventValidation =
+          ($form("#__EVENTVALIDATION").val() as string) || "";
+
+        if (!viewState) {
+          this.logger.warn("__VIEWSTATE não encontrado na página");
+        }
+
+        // 2. Baixar e resolver o CAPTCHA
+        const captchaUrl = `https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Captcha/RandomImageHandler.ashx?r=${Math.random()}`;
+        const captchaTexto =
+          await this.captchaSolverService.resolverCaptcha(captchaUrl, cookies);
+
+        if (!captchaTexto || captchaTexto.length < 3) {
+          this.logger.warn(
+            `CAPTCHA muito curto na tentativa ${tentativa}: "${captchaTexto}"`,
+          );
+          if (tentativa < MAX_TENTATIVAS) continue;
+          throw new BadRequestException(
+            "Não foi possível resolver o CAPTCHA após múltiplas tentativas",
+          );
+        }
+
+        this.logger.debug(`CAPTCHA resolvido: "${captchaTexto}"`);
+
+        // 3. Submeter o formulário via POST
+        const formData = new URLSearchParams();
+        formData.append("__VIEWSTATE", viewState);
+        formData.append("__VIEWSTATEGENERATOR", viewStateGenerator);
+        formData.append("__EVENTVALIDATION", eventValidation);
+        formData.append("ctl00$Conteudo$txtChaveAcesso", chaveAcesso);
+        formData.append("ctl00$Conteudo$ctlCaptcha$txCodigo", captchaTexto);
+        formData.append("ctl00$Conteudo$btnConsultaResumida", "Consultar");
+
+        const resposta = await axios.post(BASE_URL, formData.toString(), {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Cookie: cookies,
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            Referer: BASE_URL,
+            Origin:
+              "https://www.nfce.fazenda.sp.gov.br",
+          },
+          timeout: 20000,
+          maxRedirects: 5,
+          validateStatus: (status) => status < 500,
+        });
+
+        const htmlResposta = resposta.data as string;
+
+        // Verificar se o CAPTCHA foi rejeitado
+        if (
+          htmlResposta.includes("caracteres da imagem") ||
+          htmlResposta.includes("código de segurança") ||
+          htmlResposta.includes("Captcha") && htmlResposta.includes("inválid")
+        ) {
+          this.logger.warn(
+            `CAPTCHA rejeitado pelo servidor na tentativa ${tentativa}`,
+          );
+          if (tentativa < MAX_TENTATIVAS) continue;
+          throw new BadRequestException(
+            "Não foi possível resolver o CAPTCHA após múltiplas tentativas. Tente novamente.",
+          );
+        }
+
+        // Verificar se a chave não foi encontrada
+        if (
+          htmlResposta.includes("não localizada") ||
+          htmlResposta.includes("não encontrada")
+        ) {
+          throw new BadRequestException(
+            "Chave de acesso não encontrada. Verifique se os dígitos estão corretos.",
+          );
+        }
+
+        // Verificar se obtivemos a página de resultado com dados da nota
+        if (
+          !htmlResposta.includes("CNPJ") &&
+          !htmlResposta.includes("Valor total")
+        ) {
+          this.logger.warn(
+            `Resposta não contém dados da nota na tentativa ${tentativa}`,
+          );
+          if (tentativa < MAX_TENTATIVAS) continue;
+          throw new BadRequestException(
+            "Não foi possível obter os dados da nota fiscal. A página retornada não contém informações esperadas.",
+          );
+        }
+
+        // 4. Extrair dados da nota fiscal do HTML de resposta
+        const dados = this.extrairDados(htmlResposta);
+
+        // Usar a chave enviada caso a extração não consiga capturá-la
+        if (!dados.chaveAcesso) {
+          dados.chaveAcesso = chaveAcesso;
+        }
+
+        // 5. Salvar no MongoDB (mesmo fluxo do processarUrl)
+        const nota = new this.notaFiscalModel({
+          ...dados,
+          estabelecimentoOriginal: dados.estabelecimento,
+          urlOriginal: `nfce:chave:${chaveAcesso}`,
+          produtos: [],
+          userId: userObjectId,
+        });
+        await nota.save();
+
+        const produtos = await this.produtoModel.insertMany(
+          dados.produtos.map((p) => ({
+            ...p,
+            notaFiscal: nota._id,
+          })),
+        );
+
+        nota.produtos = produtos.map((p) => p._id);
+        await nota.save();
+
+        this.logger.log(
+          `Nota fiscal processada com sucesso via chave de acesso: ${chaveAcesso.substring(0, 10)}...`,
+        );
+
+        return this.notaFiscalModel
+          .findById(nota._id)
+          .populate("produtos")
+          .exec() as Promise<NotaFiscal>;
+      } catch (error) {
+        // Erros de negócio (BadRequest, Conflict) não devem ser retentados
+        if (
+          error instanceof BadRequestException ||
+          error instanceof ConflictException
+        ) {
+          throw error;
+        }
+
+        this.logger.error(
+          `Erro na tentativa ${tentativa}: ${error instanceof Error ? error.message : "erro desconhecido"}`,
+        );
+
+        if (tentativa >= MAX_TENTATIVAS) {
+          throw new BadRequestException(
+            `Não foi possível consultar a nota fiscal após ${MAX_TENTATIVAS} tentativas: ${error instanceof Error ? error.message : "erro desconhecido"}`,
+          );
+        }
+      }
+    }
+
+    // Fallback (nunca deve chegar aqui)
+    throw new BadRequestException(
+      "Erro inesperado ao processar a chave de acesso",
+    );
   }
 
   private isUrlNotaFiscalValida(url: string): boolean {

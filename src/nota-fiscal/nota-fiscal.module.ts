@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { MongooseModule } from '@nestjs/mongoose'
 import { NotaFiscalController } from './nota-fiscal.controller'
 import { NotaFiscalService } from './nota-fiscal.service'
+import { CaptchaSolverService } from './captcha-solver.service'
 import { AuthModule } from '../auth/auth.module'
 import { NotaFiscal, NotaFiscalSchema } from './schemas/nota-fiscal.schema'
 import { Produto, ProdutoSchema } from './schemas/produto.schema'
@@ -23,7 +24,8 @@ import {
     ]),
   ],
   controllers: [NotaFiscalController],
-  providers: [NotaFiscalService],
+  providers: [NotaFiscalService, CaptchaSolverService],
   exports: [NotaFiscalService],
 })
 export class NotaFiscalModule {}
+

@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common'
 import { NotaFiscalService } from './nota-fiscal.service'
 import { ProcessarNotaDto } from './dto/processar-nota.dto'
+import { ProcessarChaveAcessoDto } from './dto/processar-chave-acesso.dto'
 import { AtualizarEstabelecimentoDto } from './dto/atualizar-estabelecimento.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { UserId } from '../auth/decorators/user.decorator'
@@ -22,6 +23,18 @@ export class NotaFiscalController {
   @UseGuards(JwtAuthGuard)
   async processar(@Body() dto: ProcessarNotaDto, @UserId() userId: string) {
     return this.notaFiscalService.processarUrl(dto.url, userId)
+  }
+
+  @Post('processar-chave')
+  @UseGuards(JwtAuthGuard)
+  async processarChave(
+    @Body() dto: ProcessarChaveAcessoDto,
+    @UserId() userId: string,
+  ) {
+    return this.notaFiscalService.processarChaveAcesso(
+      dto.chaveAcesso,
+      userId,
+    )
   }
 
   @Get()
