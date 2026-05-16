@@ -466,34 +466,25 @@ export class NotaFiscalService {
 
   private extrairProdutos($: cheerio.Root): ProdutoExtraido[] {
     const produtos: ProdutoExtraido[] = [];
-    const texto = $("body").text();
+    const texto = $("body").text().replace(/\s+/g, " ");
 
-    const linhasProduto = texto.match(
-      /([A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ\s\d/]+)\s*\(Código[:\s]*(\d+)\s*\)\s*Qtde\.?[:\s]*([\d.,]+)\s*UN[:\s]*(\w+)\s*Vl\.?\s*Unit\.?[:\s]*([\d.,]+)\s*Vl\.?\s*Total\s*([\d.,]+)/gi,
-    );
+    const regexProduto =
+      /([A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ][A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ\s\d/.]+?)\s*\(Código:\s*([A-Z0-9]+)\s*\)\s*Qtde\.?:\s*([\d.,]+)\s*UN:\s*(\w+)\s*Vl\. Unit\.:\s*([\d.,]+)\s*Vl\. Total\s*([\d.,]+)/gi;
 
-    if (linhasProduto) {
-      const codigosIncluidos = new Set<string>();
-      for (const linha of linhasProduto) {
-        const match = linha.match(
-          /([A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ\s\d/]+)\s*\(Código[:\s]*(\d+)\s*\)\s*Qtde\.?[:\s]*([\d.,]+)\s*UN[:\s]*(\w+)\s*Vl\.?\s*Unit\.?[:\s]*([\d.,]+)\s*Vl\.?\s*Total\s*([\d.,]+)/i,
-        );
+    const codigosIncluidos = new Set<string>();
+    for (const match of texto.matchAll(regexProduto)) {
+      const codigo = match[2];
+      if (codigosIncluidos.has(codigo)) continue;
+      codigosIncluidos.add(codigo);
 
-        if (match) {
-          const codigo = match[2];
-          if (codigosIncluidos.has(codigo)) continue;
-          codigosIncluidos.add(codigo);
-
-          produtos.push({
-            nome: normalizarNomeProduto(match[1]),
-            codigo,
-            quantidade: parseFloat(match[3].replace(",", ".")),
-            unidade: match[4],
-            valorUnitario: parseFloat(match[5].replace(",", ".")),
-            valorTotal: parseFloat(match[6].replace(",", ".")),
-          });
-        }
-      }
+      produtos.push({
+        nome: normalizarNomeProduto(match[1]),
+        codigo,
+        quantidade: parseFloat(match[3].replace(",", ".")),
+        unidade: match[4],
+        valorUnitario: parseFloat(match[5].replace(",", ".")),
+        valorTotal: parseFloat(match[6].replace(",", ".")),
+      });
     }
 
     return produtos;
