@@ -47,7 +47,7 @@ export class AuthService {
     if (!ok) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    const expiresIn = dto.remember ? '30d' : '1d';
+    const expiresIn = dto.remember ? '7d' : '1d';
     const payload: JwtPayload = { sub: user._id.toString(), username: user.username };
     const accessToken = await this.jwtService.signAsync(payload, { expiresIn });
     return {
