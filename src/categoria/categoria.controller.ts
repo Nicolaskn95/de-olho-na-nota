@@ -1,42 +1,72 @@
-import { Controller, Post, Get, Delete, Put, Param, Body } from '@nestjs/common'
-import { CategoriaService } from './categoria.service'
-import { CriarPrefixoDto } from './dto/criar-prefixo.dto'
-
-@Controller('categorias')
-export class CategoriaController {
-  constructor(private readonly categoriaService: CategoriaService) {}
-
-  // ========== CATEGORIAS ==========
-
-  @Get()
-  listarCategorias() {
-    return this.categoriaService.listarCategorias()
-  }
-
-  @Get(':id')
-  buscarCategoria(@Param('id') id: string) {
-    return this.categoriaService.buscarCategoriaPorId(id)
-  }
-
-  // ========== PREFIXOS ==========
-
-  @Get('prefixos/listar')
-  listarPrefixos() {
-    return this.categoriaService.listarPrefixos()
-  }
-
-  @Post('prefixos')
-  criarPrefixo(@Body() dto: CriarPrefixoDto) {
-    return this.categoriaService.criarPrefixo(dto)
-  }
-
-  @Put('prefixos/:id')
-  atualizarPrefixo(@Param('id') id: string, @Body() dto: CriarPrefixoDto) {
-    return this.categoriaService.atualizarPrefixo(id, dto)
-  }
-
-  @Delete('prefixos/:id')
-  removerPrefixo(@Param('id') id: string) {
-    return this.categoriaService.removerPrefixo(id)
-  }
-}
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Put,
+  Param,
+  Body,
+  UseGuards,
+} from '@nestjs/common'
+import { CategoriaService } from './categoria.service'
+import { CriarPrefixoDto } from './dto/criar-prefixo.dto'
+import { ImportarPrefixosDto } from './dto/importar-prefixos.dto'
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { UserId } from '../auth/decorators/user.decorator'
+
+@Controller('categorias')
+export class CategoriaController {
+  constructor(private readonly categoriaService: CategoriaService) {}
+
+  // ========== CATEGORIAS ==========
+
+  @Get()
+  listarCategorias() {
+    return this.categoriaService.listarCategorias()
+  }
+
+  // ========== PREFIXOS (rotas estáticas antes de :id) ==========
+
+  @Get('prefixos/listar')
+  @UseGuards(JwtAuthGuard)
+  listarPrefixos(@UserId() userId: string) {
+    return this.categoriaService.listarPrefixos(userId)
+  }
+
+  @Post('prefixos')
+  @UseGuards(JwtAuthGuard)
+  criarPrefixo(@UserId() userId: string, @Body() dto: CriarPrefixoDto) {
+    return this.categoriaService.criarPrefixo(userId, dto)
+  }
+
+  @Post('prefixos/importar')
+  @UseGuards(JwtAuthGuard)
+  importarPrefixos(
+    @UserId() userId: string,
+    @Body() dto: ImportarPrefixosDto,
+  ) {
+    return this.categoriaService.importarPrefixos(userId, dto)
+  }
+
+  @Put('prefixos/:id')
+  @UseGuards(JwtAuthGuard)
+  atualizarPrefixo(
+    @UserId() userId: string,
+    @Param('id') id: string,
+    @Body() dto: CriarPrefixoDto,
+  ) {
+    return this.categoriaService.atualizarPrefixo(userId, id, dto)
+  }
+
+  @Delete('prefixos/:id')
+  @UseGuards(JwtAuthGuard)
+  removerPrefixo(@UserId() userId: string, @Param('id') id: string) {
+    return this.categoriaService.removerPrefixo(userId, id)
+  }
+
+  @Get(':id')
+  buscarCategoria(@Param('id') id: string) {
+    return this.categoriaService.buscarCategoriaPorId(id)
+  }
+}
+

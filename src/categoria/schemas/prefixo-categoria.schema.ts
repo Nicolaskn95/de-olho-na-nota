@@ -3,7 +3,10 @@ import { Document, Types } from 'mongoose'
 
 @Schema({ timestamps: true })
 export class Prefixo extends Document {
-  @Prop({ required: true, unique: true, uppercase: true })
+  @Prop({ required: true, type: Types.ObjectId, ref: 'User', index: true })
+  userId: Types.ObjectId
+
+  @Prop({ required: true, uppercase: true })
   prefixo: string
 
   @Prop({ type: Types.ObjectId, ref: 'Categoria', required: true })
@@ -11,3 +14,5 @@ export class Prefixo extends Document {
 }
 
 export const PrefixoSchema = SchemaFactory.createForClass(Prefixo)
+
+PrefixoSchema.index({ userId: 1, prefixo: 1 }, { unique: true })
