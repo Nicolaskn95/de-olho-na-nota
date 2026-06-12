@@ -6,6 +6,7 @@ import { AppService } from './app.service'
 import { NotaFiscalModule } from './nota-fiscal/nota-fiscal.module'
 import { CategoriaModule } from './categoria/categoria.module'
 import { AuthModule } from './auth/auth.module'
+import { DuracaoMediaModule } from './duracao-media/duracao-media.module'
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { AuthModule } from './auth/auth.module'
     NotaFiscalModule,
     CategoriaModule,
     AuthModule,
+    DuracaoMediaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
