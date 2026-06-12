@@ -39,7 +39,7 @@ export class DuracaoMediaService {
 
     const prefixos = await this.prefixoModel
       .find({
-        userId: this.toUserId(userId),
+        $or: [{ userId: this.toUserId(userId) }, { userId }],
         categoria: new Types.ObjectId(dto.categoriaId),
       })
       .exec()
@@ -57,7 +57,7 @@ export class DuracaoMediaService {
 
     const notas = await this.notaFiscalModel
       .find({
-        userId: this.toUserId(userId),
+        $or: [{ userId: this.toUserId(userId) }, { userId }],
         dataEmissao: { $gte: startDate, $lte: endDate },
       })
       .populate('produtos')
@@ -67,8 +67,14 @@ export class DuracaoMediaService {
       .map((nf) => {
         const produtosFiltrados = (nf.produtos as unknown as Produto[]).filter(
           (prod) => {
-            const nomeUpper = prod.nome.toUpperCase()
-            return prefixStrings.some((prefix) => nomeUpper.startsWith(prefix))
+            const nomeLimpo = prod.nome.replace(/\s+/g, ' ').trim().toUpperCase()
+            const SIGLAS = /^(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MG|MS|MT|PA|PB|PR|PE|PI|RJ|RN|RO|RS|SC|SP|SE|TO)\s+/i
+            const nomeSemSigla = nomeLimpo.replace(SIGLAS, '').trim() || nomeLimpo
+
+            return prefixStrings.some((prefix) => {
+              const prefixUpper = prefix.toUpperCase().trim()
+              return nomeLimpo.startsWith(prefixUpper) || nomeSemSigla.startsWith(prefixUpper)
+            })
           },
         )
 
@@ -116,9 +122,17 @@ export class DuracaoMediaService {
         .exec()
 
       if (nf) {
+        const dataEmissao =
+          nf.dataEmissao instanceof Date
+            ? nf.dataEmissao
+            : new Date(nf.dataEmissao)
+        const nomeLimpo = produto.nome.replace(/\s+/g, ' ').trim().toUpperCase()
+        const SIGLAS = /^(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MG|MS|MT|PA|PB|PR|PE|PI|RJ|RN|RO|RS|SC|SP|SE|TO)\s+/i
+        const nomeSemSigla = nomeLimpo.replace(SIGLAS, '').trim() || nomeLimpo
+
         produtosComData.push({
-          nome: produto.nome.toUpperCase(),
-          dataEmissao: nf.dataEmissao,
+          nome: nomeSemSigla,
+          dataEmissao,
         })
       }
     }
