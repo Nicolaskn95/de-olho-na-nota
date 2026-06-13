@@ -63,24 +63,37 @@ export class DuracaoMediaService {
       .populate('produtos')
       .exec()
 
-    const notasFiltradas = notas
-      .map((nf) => {
-        const produtosFiltrados = (nf.produtos as unknown as Produto[]).filter(
-          (prod) => {
-            const nomeLimpo = prod.nome.replace(/\s+/g, ' ').trim().toUpperCase()
-            const SIGLAS = /^(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MG|MS|MT|PA|PB|PR|PE|PI|RJ|RN|RO|RS|SC|SP|SE|TO)\s+/i
-            const nomeSemSigla = nomeLimpo.replace(SIGLAS, '').trim() || nomeLimpo
+    const notasFiltradas: any[] = []
 
-            return prefixStrings.some((prefix) => {
-              const prefixUpper = prefix.toUpperCase().trim()
-              return nomeLimpo.startsWith(prefixUpper) || nomeSemSigla.startsWith(prefixUpper)
-            })
-          },
-        )
+    for (const nf of notas) {
+      const produtosFiltrados: Produto[] = []
+      const rawProdutos = Array.isArray(nf.produtos) ? nf.produtos : []
 
-        if (produtosFiltrados.length === 0) return null
+      for (const prod of rawProdutos) {
+        let productDoc: any = prod
 
-        return {
+        if (prod && !(prod as any).nome) {
+          productDoc = await this.produtoModel.findById(prod).exec()
+        }
+
+        if (productDoc && typeof productDoc.nome === 'string') {
+          const nomeLimpo = productDoc.nome.replace(/\s+/g, ' ').trim().toUpperCase()
+          const SIGLAS = /^(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MG|MS|MT|PA|PB|PR|PE|PI|RJ|RN|RO|RS|SC|SP|SE|TO)\s+/i
+          const nomeSemSigla = nomeLimpo.replace(SIGLAS, '').trim() || nomeLimpo
+
+          const matches = prefixStrings.some((prefix) => {
+            const prefixUpper = prefix.toUpperCase().trim()
+            return nomeLimpo.startsWith(prefixUpper) || nomeSemSigla.startsWith(prefixUpper)
+          })
+
+          if (matches) {
+            produtosFiltrados.push(productDoc)
+          }
+        }
+      }
+
+      if (produtosFiltrados.length > 0) {
+        notasFiltradas.push({
           _id: nf._id,
           chaveAcesso: nf.chaveAcesso,
           numero: nf.numero,
@@ -91,9 +104,9 @@ export class DuracaoMediaService {
           valorTotal: nf.valorTotal,
           valorPago: nf.valorPago,
           produtos: produtosFiltrados,
-        }
-      })
-      .filter(Boolean)
+        })
+      }
+    }
 
     return {
       notasFiscais: notasFiltradas,
