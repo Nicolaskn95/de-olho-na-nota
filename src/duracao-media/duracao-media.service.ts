@@ -56,6 +56,15 @@ export class DuracaoMediaService {
         .limit(10)
         .exec()
 
+      const allUserNotas = await this.notaFiscalModel
+        .find({ $or: [{ userId: this.toUserId(userId) }, { userId }] })
+        .exec()
+
+      const allNotas = await this.notaFiscalModel
+        .find({})
+        .limit(5)
+        .exec()
+
       return {
         notasFiscais: [],
         categoria,
@@ -70,6 +79,21 @@ export class DuracaoMediaService {
           prefixosRaw: prefixos,
           allUserPrefixos,
           allPrefixosSample: allPrefixos,
+          allUserNotasCount: allUserNotas.length,
+          allUserNotasSample: allUserNotas.slice(0, 5).map(n => ({
+            _id: n._id,
+            userId: n.userId,
+            dataEmissao: n.dataEmissao,
+            dataEmissaoType: typeof n.dataEmissao,
+            isDateInstance: n.dataEmissao instanceof Date
+          })),
+          allNotasSample: allNotas.map(n => ({
+            _id: n._id,
+            userId: n.userId,
+            dataEmissao: n.dataEmissao,
+            dataEmissaoType: typeof n.dataEmissao,
+            isDateInstance: n.dataEmissao instanceof Date
+          })),
           notasMapeadas: []
         }
       }
