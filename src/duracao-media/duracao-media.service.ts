@@ -47,6 +47,15 @@ export class DuracaoMediaService {
     const prefixStrings = prefixos.map((p) => p.prefixo)
 
     if (prefixStrings.length === 0) {
+      const allUserPrefixos = await this.prefixoModel
+        .find({ $or: [{ userId: this.toUserId(userId) }, { userId }] })
+        .exec()
+      
+      const allPrefixos = await this.prefixoModel
+        .find({})
+        .limit(10)
+        .exec()
+
       return {
         notasFiscais: [],
         categoria,
@@ -54,10 +63,13 @@ export class DuracaoMediaService {
         periodoFim: endDate,
         debug: {
           userId,
+          categoriaIdQuery: dto.categoriaId,
           prefixosEncontrados: prefixStrings,
           totalPrefixosQuery: prefixos.length,
           totalNotasQuery: 0,
           prefixosRaw: prefixos,
+          allUserPrefixos,
+          allPrefixosSample: allPrefixos,
           notasMapeadas: []
         }
       }
