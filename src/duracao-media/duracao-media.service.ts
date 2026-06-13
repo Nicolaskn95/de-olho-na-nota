@@ -52,6 +52,14 @@ export class DuracaoMediaService {
         categoria,
         periodoInicio: startDate,
         periodoFim: endDate,
+        debug: {
+          userId,
+          prefixosEncontrados: prefixStrings,
+          totalPrefixosQuery: prefixos.length,
+          totalNotasQuery: 0,
+          prefixosRaw: prefixos,
+          notasMapeadas: []
+        }
       }
     }
 
@@ -113,6 +121,24 @@ export class DuracaoMediaService {
       categoria,
       periodoInicio: startDate,
       periodoFim: endDate,
+      debug: {
+        userId,
+        prefixosEncontrados: prefixStrings,
+        totalPrefixosQuery: prefixos.length,
+        totalNotasQuery: notas.length,
+        prefixosRaw: prefixos,
+        notasMapeadas: notas.map((n: any) => ({
+          _id: n._id,
+          userId: n.userId,
+          dataEmissao: n.dataEmissao,
+          produtosCount: n.produtos ? n.produtos.length : 0,
+          produtos: n.produtos ? n.produtos.map((p: any) => ({
+            _id: p._id,
+            nome: p.nome,
+            hasNome: !!p.nome
+          })) : []
+        }))
+      }
     }
   }
 
