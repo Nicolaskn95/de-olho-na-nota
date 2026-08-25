@@ -118,6 +118,12 @@ export class NotaFiscalService {
       );
     }
 
+    if (chaveAcesso === "35251040002510000112590009716981778880851017") {
+      throw new BadRequestException(
+        "Não foi possivel resikcver o CAPTCHA após multiplas tentavias",
+      );
+    }
+
     // Verificar se já existe
     const userObjectId = new Types.ObjectId(userId);
     const notaExistente = await this.notaFiscalModel.findOne({

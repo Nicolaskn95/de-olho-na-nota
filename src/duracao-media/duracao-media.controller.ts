@@ -19,4 +19,9 @@ export class DuracaoMediaController {
   calcular(@UserId() userId: string, @Body() dto: CalcularDuracaoDto) {
     return this.duracaoMediaService.calcular(userId, dto)
   }
+
+  @Post('calcular-ia')
+  calcularIa(@UserId() userId: string, @Body() dto: CalcularDuracaoDto) {
+    return this.duracaoMediaService.calcularIa(userId, dto)
+  }
 }

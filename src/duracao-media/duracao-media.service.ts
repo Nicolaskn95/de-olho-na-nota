@@ -7,6 +7,7 @@ import { Prefixo } from '../categoria/schemas/prefixo-categoria.schema'
 import { Categoria } from '../categoria/schemas/categoria.schema'
 import { FiltrarDuracaoDto } from './dto/filtrar-duracao.dto'
 import { CalcularDuracaoDto } from './dto/calcular-duracao.dto'
+import { QwenAiService, DadosItemConsumo } from './qwen-ai.service'
 
 @Injectable()
 export class DuracaoMediaService {
@@ -19,6 +20,7 @@ export class DuracaoMediaService {
     private prefixoModel: Model<Prefixo>,
     @InjectModel(Categoria.name)
     private categoriaModel: Model<Categoria>,
+    private qwenAiService: QwenAiService,
   ) {}
 
   private toUserId(userId: string): Types.ObjectId {
@@ -258,5 +260,84 @@ export class DuracaoMediaService {
       detalhes,
       qtdMeses: dto.qtdMeses,
     }
+  }
+
+  async calcularIa(userId: string, dto: CalcularDuracaoDto) {
+    const produtoObjectIds = dto.produtoIds.map((id) => new Types.ObjectId(id))
+
+    const produtos = await this.produtoModel
+      .find({ _id: { $in: produtoObjectIds } })
+      .exec()
+
+    if (produtos.length === 0) {
+      throw new NotFoundException('Nenhum produto encontrado')
+    }
+
+    const produtosAgrupados = new Map<
+      string,
+      {
+        unidade: string
+        quantidadeTotal: number
+        comprasCount: number
+        datas: Date[]
+        valores: number[]
+      }
+    >()
+
+    for (const produto of produtos) {
+      const nf = await this.notaFiscalModel
+        .findById(produto.notaFiscal)
+        .exec()
+
+      if (nf) {
+        const dataEmissao =
+          nf.dataEmissao instanceof Date
+            ? nf.dataEmissao
+            : new Date(nf.dataEmissao)
+
+        const nomeLimpo = produto.nome.replace(/\s+/g, ' ').trim().toUpperCase()
+        const SIGLAS = /^(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MG|MS|MT|PA|PB|PR|PE|PI|RJ|RN|RO|RS|SC|SP|SE|TO)\s+/i
+        const nomeSemSigla = nomeLimpo.replace(SIGLAS, '').trim() || nomeLimpo
+
+        const existente = produtosAgrupados.get(nomeSemSigla) || {
+          unidade: produto.unidade || 'un',
+          quantidadeTotal: 0,
+          comprasCount: 0,
+          datas: [],
+          valores: [],
+        }
+
+        existente.quantidadeTotal += produto.quantidade || 1
+        existente.comprasCount += 1
+        existente.datas.push(dataEmissao)
+        if (produto.valorTotal) existente.valores.push(produto.valorTotal)
+
+        produtosAgrupados.set(nomeSemSigla, existente)
+      }
+    }
+
+    const itensConsumo: DadosItemConsumo[] = []
+
+    for (const [nome, grupo] of produtosAgrupados) {
+      grupo.datas.sort((a, b) => a.getTime() - b.getTime())
+
+      const diferencasDias: number[] = []
+      for (let i = 1; i < grupo.datas.length; i++) {
+        const diffMs = grupo.datas[i].getTime() - grupo.datas[i - 1].getTime()
+        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+        diferencasDias.push(diffDays)
+      }
+
+      itensConsumo.push({
+        nome,
+        unidade: grupo.unidade,
+        quantidadeTotal: grupo.quantidadeTotal,
+        comprasCount: grupo.comprasCount,
+        datas: grupo.datas,
+        diferencasDias,
+      })
+    }
+
+    return this.qwenAiService.analisarConsumo(itensConsumo, dto.qtdMeses)
   }
 }
